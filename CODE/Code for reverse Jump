@@ -1,0 +1,226 @@
+//CREATE EVENT
+
+sprite[RUN]=spr_player_run;
+sprite[LEFT]=spr_player_lwft;
+sprite[IDLE]=spr_player_idle;
+
+face = IDLE; 
+
+hsp = 0; // horizontal speed
+vsp = 0; // vertical speed
+
+move_speed = 3;
+grav = 0.5;
+jump_speed = -7;
+
+max_jumps = 2;
+jump_count = 0;
+img_speed = 1;
+// --- HP SYSTEM ---
+max_hp = 3;
+hp = max_hp;
+
+damage_cooldown = 0;
+damage_time = 30;
+
+// --- Death / Respawn ---
+is_dead = false;
+death_timer = 0;
+death_delay = 40; // short delay before respawn
+
+respawn_x = x;
+respawn_y = y;
+
+// --- Hit Animation ---
+hit_flash_timer = 0;
+hit_flash_time = 15;
+
+function take_damage(amount)
+{
+    if (damage_cooldown <= 0 && !is_dead)
+    {
+        hp -= amount;
+        damage_cooldown = damage_time;
+
+        hit_flash_timer = hit_flash_time;
+
+        // Store death position
+        respawn_x = x;
+        respawn_y = y;
+
+        if (hp > 0)
+        {
+            // Lose 1 HP → temporary death state
+            is_dead = true;
+            death_timer = death_delay;
+        }
+        else
+        {
+            // Lost all HP → full reset
+            room_restart();
+        }
+    }
+}
+
+//STEP EVENT
+
+// --------------------------------------
+// INPUT
+// --------------------------------------
+
+var rightkey = keyboard_check(vk_right) or keyboard_check(ord("D"));
+var leftkey  = keyboard_check(vk_left)  or keyboard_check(ord("A"));
+
+
+if (is_dead)
+{
+    death_timer--;
+
+    // small fade effect
+    image_alpha = lerp(image_alpha, 0.3, 0.15);
+
+    if (death_timer <= 0)
+    {
+        x = respawn_x;
+        y = respawn_y;
+
+        vsp = 0;
+        hsp = 0;
+
+        image_alpha = 1;
+        is_dead = false;
+    }
+
+    exit;
+}
+//hp
+if (damage_cooldown > 0)
+{
+    damage_cooldown--;
+}
+
+vsp += grav;
+
+
+// --------------------------------------
+// GROUND CHECK
+// --------------------------------------
+
+var on_ground = place_meeting(x, y + 1, obj_block);
+
+if (on_ground)
+{
+    jump_count = 0;
+}
+
+
+
+// CONTROL REVERSAL SYSTEM
+
+
+if (on_ground)
+{
+    // Normal controls
+    hsp = (rightkey - leftkey) * move_speed;
+}
+else
+{
+    // Reversed controls in air
+    hsp = (leftkey - rightkey) * move_speed;
+}
+
+
+
+// DOUBLE JUMP
+
+
+if ((keyboard_check_pressed(vk_space) ||
+    keyboard_check_pressed(vk_up) ||
+    keyboard_check_pressed(ord("W"))))
+{
+    if (jump_count < max_jumps)
+    {
+        vsp = jump_speed;
+        jump_count += 1;
+    }
+}
+
+
+// HORIZONTAL COLLISION
+
+
+if (place_meeting(x + hsp, y, obj_block))
+{
+    while (!place_meeting(x + sign(hsp), y, obj_block))
+    {
+        x += sign(hsp);
+    }
+    hsp = 0;
+}
+x += hsp;
+
+
+
+// VERTICAL COLLISION
+
+
+if (place_meeting(x, y + vsp, obj_block))
+{
+    while (!place_meeting(x, y + sign(vsp), obj_block))
+    {
+        y += sign(vsp);
+    }
+    vsp = 0;
+}
+else
+{
+    y += vsp;
+}
+
+if (y > room_height + 100)
+{
+    take_damage (1, 15); // quick respawn
+}
+
+
+if ( place_meeting(x, y, oSpikes))
+{
+    
+	
+	
+	take_damage(1);
+}
+
+
+// Hit flash effect
+if (hit_flash_timer > 0)
+{
+    hit_flash_timer--;
+    image_alpha = 0.5 + random(0.5);
+}
+else
+{
+    image_alpha = 1;
+}
+
+
+
+//Animation
+//player animation
+mask_index=IDLE;
+
+
+// Direction change
+if (hsp > 0) face = RUN;
+if (hsp < 0) face = LEFT;
+
+// Idle when not moving and on ground
+if (hsp == 0 && on_ground)
+{
+    face = IDLE;
+}
+
+// Apply sprite
+sprite_index = sprite[face];
+
+
