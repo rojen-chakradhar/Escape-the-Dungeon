@@ -1,0 +1,47 @@
+//OBJECT_BREAK_BLOCK
+
+//CREATE EVENT
+state = 0; // 0 = normal, 1 = breaking
+timer = 0;
+break_delay = 20;
+
+
+//STEP EVENT
+// Player on top?
+if (state == 0)
+{
+if place_meeting(x, y-1, obj_player)
+{
+    state = 1;
+    timer =  break_delay; //start countdown
+}
+}
+
+// countdown
+if (state == 1)
+{
+    timer--;
+  
+if (timer <= 0)
+{
+    y -= 1; // small nudge up to prevent stuck collision
+    instance_destroy();
+}
+}
+
+//DRAW EVENT
+if (state == 0)
+{
+    draw_self();
+}
+else
+{
+	//flashing effect while breaking
+    if (timer mod 6 < 3)
+	draw_set_colour(c_red);
+	else
+	draw_set_colour(c_white);
+	
+	draw_self();
+	draw_set_colour(c_white);
+}
