@@ -1,0 +1,11 @@
+**COLLISION**  
+// This runs inside the sto ne when it hits the enemy
+with(other) {
+    hp -= 1; // Subtract HP from the specific enemy hit
+}
+instance_destroy(); // Destroy the stone  
+
+**OUTSIDE THE ROOM**
+
+
+instance_destroy(); // Prevent lag by deleting missed shots
