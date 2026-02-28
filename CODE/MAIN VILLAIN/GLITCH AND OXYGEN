@@ -1,0 +1,416 @@
+CREATE EVENT
+
+// ================= SPRITES =================
+sprite[RUN]  = spr_player_run;
+sprite[LEFT] = spr_player_lwft;
+sprite[IDLE] = spr_player_idle;
+
+face = IDLE;
+
+hsp = 0;
+vsp = 0;
+
+move_speed = 5;
+grav = 0.5;
+jump_speed = -7;
+
+max_jumps = 2;
+jump_count = 0;
+
+
+// ================= HP SYSTEM =================
+max_hp = 3;
+hp = max_hp;
+
+damage_cooldown = 0;
+damage_time = 30;
+
+is_dead = false;
+death_timer = 0;
+death_delay = 40;
+
+respawn_x = x;
+respawn_y = y;
+
+hit_flash_timer = 0;
+hit_flash_time = 15;
+
+
+// ================= OXYGEN SYSTEM =================
+oxygen_max = 300;     // 5 seconds at 60fps
+oxygen = oxygen_max;
+
+is_dizzy = true;      // starts dizzy
+
+
+// ================= DAMAGE FUNCTION =================
+function take_damage(amount)
+{
+    if (damage_cooldown <= 0 && !is_dead)
+    {
+        hp -= amount;
+        damage_cooldown = damage_time;
+
+        hit_flash_timer = hit_flash_time;
+
+        respawn_x = x;
+        respawn_y = y;
+
+        if (hp > 0)
+        {
+            is_dead = true;
+            death_timer = death_delay;
+        }
+        else
+        {
+            room_restart();
+        }
+    }
+
+
+STEP EVENT
+
+var rightkey = keyboard_check(vk_right) or keyboard_check(ord("D"));
+var leftkey  = keyboard_check(vk_left)  or keyboard_check(ord("A"));
+
+
+// ================= DEATH HANDLING =================
+if (is_dead)
+{
+    death_timer--;
+    image_alpha = lerp(image_alpha, 0.3, 0.15);
+
+    if (death_timer <= 0)
+    {
+        x = respawn_x;
+        y = respawn_y;
+        vsp = 0;
+        hsp = 0;
+        image_alpha = 1;
+        is_dead = false;
+    }
+
+    exit;
+}
+
+
+// ================= HP COOLDOWN =================
+if (damage_cooldown > 0)
+{
+    damage_cooldown--;
+}
+
+
+// ================= GRAVITY =================
+vsp += grav;
+
+
+// ================= GROUND CHECK =================
+var on_ground = place_meeting(x, y + 1, obj_block);
+
+if (on_ground)
+{
+    jump_count = 0;
+}
+
+
+// ================= MOVEMENT =================
+if (on_ground)
+{
+    hsp = (rightkey - leftkey) * move_speed;
+}
+
+
+// ================= DOUBLE JUMP =================
+if (keyboard_check_pressed(vk_space) ||
+    keyboard_check_pressed(vk_up) ||
+    keyboard_check_pressed(ord("W")))
+{
+    if (jump_count < max_jumps)
+    {
+        vsp = jump_speed;
+        jump_count++;
+    }
+}
+
+
+// ================= HORIZONTAL COLLISION =================
+if (place_meeting(x + hsp, y, obj_block))
+{
+    while (!place_meeting(x + sign(hsp), y, obj_block))
+    {
+        x += sign(hsp);
+    }
+    hsp = 0;
+}
+x += hsp;
+
+
+// ================= VERTICAL COLLISION =================
+if (place_meeting(x, y + vsp, obj_block))
+{
+    while (!place_meeting(x, y + sign(vsp), obj_block))
+    {
+        y += sign(vsp);
+    }
+    vsp = 0;
+}
+else
+{
+    y += vsp;
+}
+
+
+// ================= DAMAGE CHECK =================
+if (y > room_height + 100 || place_meeting(x, y, oSpikes))
+{
+    take_damage(1);
+}
+
+
+// ================= HIT FLASH =================
+if (hit_flash_timer > 0)
+{
+    hit_flash_timer--;
+    image_alpha = 0.5 + random(0.5);
+}
+else
+{
+    image_alpha = 1;
+}
+
+
+// =====================================================
+// 🫁 OXYGEN SYSTEM
+// =====================================================
+
+if (!is_dead)
+{
+    oxygen--;
+
+    if (oxygen <= 0)
+    {
+        oxygen = 0;
+        take_damage(1);
+        oxygen = oxygen_max; // reset after damage
+    }
+}
+
+// Dizzy while oxygen not full
+is_dizzy = (oxygen < oxygen_max);
+
+
+// ================= DIZZINESS VISUAL =================
+if (is_dizzy)
+{
+    image_angle = random_range(-5, 5);
+}
+else
+{
+    image_angle = 0;
+}
+
+
+// ================= CAMERA FOLLOW + SHAKE =================
+var cam = view_camera[0];
+
+var base_x = x - camera_get_view_width(cam) / 2;
+var base_y = y - camera_get_view_height(cam) / 2;
+
+if (is_dizzy)
+{
+    var shake = 8;
+    base_x += random_range(-shake, shake);
+    base_y += random_range(-shake, shake);
+}
+
+camera_set_view_pos(cam, base_x, base_y);
+
+
+// ================= ANIMATION =================
+mask_index = IDLE;
+
+if (hsp > 0) face = RUN;
+if (hsp < 0) face = LEFT;
+
+if (hsp == 0 && on_ground)
+{
+    face = IDLE;
+}
+
+sprite_index = sprite[face];
+
+
+//DRAW EVENT
+
+var rightkey = keyboard_check(vk_right) or keyboard_check(ord("D"));
+var leftkey  = keyboard_check(vk_left)  or keyboard_check(ord("A"));
+
+
+// ================= DEATH HANDLING =================
+if (is_dead)
+{
+    death_timer--;
+    image_alpha = lerp(image_alpha, 0.3, 0.15);
+
+    if (death_timer <= 0)
+    {
+        x = respawn_x;
+        y = respawn_y;
+        vsp = 0;
+        hsp = 0;
+        image_alpha = 1;
+        is_dead = false;
+    }
+
+    exit;
+}
+
+
+// ================= HP COOLDOWN =================
+if (damage_cooldown > 0)
+{
+    damage_cooldown--;
+}
+
+
+// ================= GRAVITY =================
+vsp += grav;
+
+
+// ================= GROUND CHECK =================
+var on_ground = place_meeting(x, y + 1, obj_block);
+
+if (on_ground)
+{
+    jump_count = 0;
+}
+
+
+// ================= MOVEMENT =================
+if (on_ground)
+{
+    hsp = (rightkey - leftkey) * move_speed;
+}
+
+
+// ================= DOUBLE JUMP =================
+if (keyboard_check_pressed(vk_space) ||
+    keyboard_check_pressed(vk_up) ||
+    keyboard_check_pressed(ord("W")))
+{
+    if (jump_count < max_jumps)
+    {
+        vsp = jump_speed;
+        jump_count++;
+    }
+}
+
+
+// ================= HORIZONTAL COLLISION =================
+if (place_meeting(x + hsp, y, obj_block))
+{
+    while (!place_meeting(x + sign(hsp), y, obj_block))
+    {
+        x += sign(hsp);
+    }
+    hsp = 0;
+}
+x += hsp;
+
+
+// ================= VERTICAL COLLISION =================
+if (place_meeting(x, y + vsp, obj_block))
+{
+    while (!place_meeting(x, y + sign(vsp), obj_block))
+    {
+        y += sign(vsp);
+    }
+    vsp = 0;
+}
+else
+{
+    y += vsp;
+}
+
+
+// ================= DAMAGE CHECK =================
+if (y > room_height + 100 || place_meeting(x, y, oSpikes))
+{
+    take_damage(1);
+}
+
+
+// ================= HIT FLASH =================
+if (hit_flash_timer > 0)
+{
+    hit_flash_timer--;
+    image_alpha = 0.5 + random(0.5);
+}
+else
+{
+    image_alpha = 1;
+}
+
+
+// =====================================================
+// 🫁 OXYGEN SYSTEM
+// =====================================================
+
+if (!is_dead)
+{
+    oxygen--;
+
+    if (oxygen <= 0)
+    {
+        oxygen = 0;
+        take_damage(1);
+        oxygen = oxygen_max; // reset after damage
+    }
+}
+
+// Dizzy while oxygen not full
+is_dizzy = (oxygen < oxygen_max);
+
+
+// ================= DIZZINESS VISUAL =================
+if (is_dizzy)
+{
+    image_angle = random_range(-5, 5);
+}
+else
+{
+    image_angle = 0;
+}
+
+
+// ================= CAMERA FOLLOW + SHAKE =================
+var cam = view_camera[0];
+
+var base_x = x - camera_get_view_width(cam) / 2;
+var base_y = y - camera_get_view_height(cam) / 2;
+
+if (is_dizzy)
+{
+    var shake = 8;
+    base_x += random_range(-shake, shake);
+    base_y += random_range(-shake, shake);
+}
+
+camera_set_view_pos(cam, base_x, base_y);
+
+
+// ================= ANIMATION =================
+mask_index = IDLE;
+
+if (hsp > 0) face = RUN;
+if (hsp < 0) face = LEFT;
+
+if (hsp == 0 && on_ground)
+{
+    face = IDLE;
+}
+
+sprite_index = sprite[face];
+
+}
