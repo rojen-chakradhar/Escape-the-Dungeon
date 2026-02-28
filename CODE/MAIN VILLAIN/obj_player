@@ -1,1 +1,56 @@
+**CREATE**
+{
+hsp = 0;        // Horizontal speed
+vsp = 0;        // Vertical speed
+grv = 0.3;      // Gravity
+walksp = 6;     // Walking speed
+facing = 0;     // 0 = Right, 180 = Left
+}  
 
+
+**STEP**
+{  
+
+// 1. Inputs
+var _key_left = keyboard_check(vk_left);
+var _key_right = keyboard_check(vk_right);
+var _key_jump = keyboard_check_pressed(vk_up);
+
+// 2. Movement Logic
+var _move = _key_right - _key_left;
+hsp = _move * 7; 
+vsp = vsp + grv;
+
+if (_move != 0) facing = (_move > 0) ? 0 : 180;
+
+// 3. Jump (Only if on the floor)
+if (place_meeting(x, y + 1, obj_platform)) && (_key_jump) {
+    vsp = -11; 
+}
+
+// 4. Horizontal Collision
+if (place_meeting(x + hsp, y, obj_platform)) {
+    while (!place_meeting(x + sign(hsp), y, obj_platform)) {
+        x = x + sign(hsp);
+    }
+    hsp = 0;
+}
+x += hsp;
+
+// 5. Vertical Collision
+if (place_meeting(x, y + vsp, obj_platform)) {
+    while (!place_meeting(x, y + sign(vsp), obj_platform)) {
+        y = y + sign(vsp);
+    }
+    vsp = 0;
+}
+y += vsp;
+
+// 6. Throwing Stone
+if (keyboard_check_pressed(vk_space)) {
+    var _stone = instance_create_layer(x, y - 16, "Instances", obj_stone);
+    _stone.direction = facing;
+    _stone.speed = 12;
+}
+
+}
