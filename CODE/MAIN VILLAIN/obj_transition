@@ -1,0 +1,53 @@
+//CREATE EVENT
+
+
+alpha = 0;
+fade_speed = 0.05;
+target_room = noone;
+state = 0; 
+
+//STEP EVENT
+
+
+switch (state)
+{
+
+    case 0: // Fade Out
+        alpha += fade_speed;
+
+        if (alpha >= 1)
+        {
+            alpha = 1;
+            state = 1;
+
+            if (target_room != noone)
+            {
+                room_goto(target_room);
+            }
+        }
+    break;
+
+    case 2: // Fade In
+        alpha -= fade_speed;
+
+        if (alpha <= 0)
+        {
+            instance_destroy();
+        }
+    break;
+}
+
+if (state == 1)
+{
+    state = 2;
+}
+
+//DRAW GUI
+draw_set_alpha(alpha);
+draw_set_color(c_black);
+draw_rectangle(0,0,display_get_gui_width(),display_get_gui_height(),false);
+draw_set_alpha(1);
+
+
+
+
