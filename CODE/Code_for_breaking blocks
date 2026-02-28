@@ -202,8 +202,20 @@ else
     sprite_index = spr_player_run;
 }
 
-
-
-
-
 }
+
+//DRAW EVENT 
+
+draw_self();
+
+// --- HEART UI ---
+var heart_x = x;
+var heart_y = bbox_top - 20;
+
+// Frame is based on how much damage taken
+var damage_taken = max_hp - hp;
+
+// Make sure it never goes above 3
+damage_taken = clamp(damage_taken, 0, 3);
+
+draw_sprite(spr_playerHeart, damage_taken, heart_x, heart_y);
