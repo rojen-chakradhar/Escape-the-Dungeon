@@ -1,0 +1,4 @@
+//COLLISION WITH obj_playerlevel0
+other.oxygen = other.oxygen_max;
+other.is_dizzy = false;
+instance_destroy();
