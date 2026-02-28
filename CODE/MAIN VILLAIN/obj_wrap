@@ -1,0 +1,17 @@
+//COLLISION WITH OBJ_PLAYER
+
+if (!instance_exists(obj_transition))
+{
+    var t = instance_create_layer(0, 0, "Instances", obj_transition);
+    t.target_room = room_next(room);
+}
+room_goto_next();
+
+
+//COLLISION WITH OBJ_PLAYERLEVEL 0
+if (!instance_exists(obj_transition))
+{
+    var t = instance_create_layer(0, 0, "Instances", obj_transition);
+    t.target_room = room_next(room);
+}
+room_goto_next();
