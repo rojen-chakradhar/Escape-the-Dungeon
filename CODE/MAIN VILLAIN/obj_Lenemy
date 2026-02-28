@@ -1,0 +1,41 @@
+**CREATE**
+{  
+hp = 10;
+walksp = 1.5;
+vsp = 0;
+grv = 0.3;  
+}  
+
+**STEP**  
+{  
+// 1. Gravity for Enemy
+vsp = vsp + grv;
+if (place_meeting(x, y + vsp, obj_platform)) {
+    while (!place_meeting(x, y + sign(vsp), obj_platform)) {
+        y = y + sign(vsp);
+    }
+    vsp = 0;
+}
+y += vsp;
+
+// 2. Chase Player
+if (instance_exists(obj_player)) {
+    var _dir = sign(obj_player.x - x);
+    x += _dir * walksp;
+}
+
+// 3. Check for Death
+if (hp <= 0) {
+    instance_destroy();  
+}  
+}  
+
+**COLLISION**
+{
+// If the enemy touches the player, the player dies
+instance_destroy(other);
+game_restart(); // Restart level	
+}
+
+
+
